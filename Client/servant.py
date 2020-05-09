@@ -2,8 +2,6 @@ import socket, errno
 import threading #Allowing for clients not to be waiting for other code
 import os.path
 from os import path
-import time
-from random import randint
 
 #from twisted.internet.protocol import Protocol
 
@@ -14,19 +12,15 @@ class Server:
     FORMAT = 'utf-8'
     DISCONNECT_MESSAGE = "!DISCONNECT"
     BUFFER_SIZE = 1024
-    peers = []
-    connections = []
 
     def __init__(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind(self.ADDR)
-        sock.listen(5)
+        sock.listen()
         print(f"[Listening] Server is running on {self.SERVER}")
         while True:
             conn , addr = sock.accept() #This will wait until a new connection comes in and then stores it in connection socket variable as well as its address
             thread = threading.Thread(target=self.handle_client, args = (conn, addr)) #when a new connection occurs will creat a new thread with target function and (conn, addr) as args
             thread.start()
-            self.peers.append(addr)
             print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}") #shows how many threads there are
 
     def handle_client(self, conn, addr):
@@ -51,7 +45,6 @@ class Server:
             print("[DISCONNECTING CLIENT]")
         #connection with client is closed
         conn.close()
-        self.peers.remove(addr)
 
 class Client:
 
@@ -70,9 +63,6 @@ class Client:
     #this will allow the server to know if a file is being sent over
     CONFIRMATION = "!SENDINGMSG".encode(FORMAT)
     CONFIRMATION += b' '  * (BUFFER_SIZE - len(CONFIRMATION))
-
-    peers = []
-    connections = []
     
     def __init__(self):
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -101,17 +91,3 @@ class Client:
         else:
             print("file not found")
             client.send(self.DISCONNECT_MESSAGE)
-
-    def updatePeers(self, peerData):
-        p2p.peers = str(peerData, 'utf-8').split(",")[:-1]
-
-class p2p:
-    peers = []
-
-try:
-    server = Server()
-except socket.error as e:
-    if e.errno == errno.EADDRINUSE:
-        client = Client()
-    else:
-        print(e)
